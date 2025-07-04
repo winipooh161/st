@@ -13,11 +13,10 @@ export default defineConfig({
                 'resources/js/mobile-nav-wheel-picker.js',
                 'resources/js/loading-spinner.js',
                 'resources/js/register-sw.js', // Добавляем скрипт для регистрации Service Worker
-                'resources/js/navigation-scroll-tester.js', // Добавляем тестер скролла
-                'resources/js/mobile-nav-diagnostics.js', // Добавляем скрипт диагностики мобильной навигации
-                'public/js/mobile-nav-media-integration.js', // Добавляем интеграцию мобильной навигации с медиа-редактором
+            
+              
                 'public/js/media-editor.js', // Добавляем медиа-редактор
-                'public/js/media-upload-diagnostics.js', // Добавляем диагностику загрузок
+               
                 'resources/sass/app.scss',
             ],
             refresh: true,

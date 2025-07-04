@@ -1,1 +1,0 @@
-<?php /**PATH C:\OSPanel\domains\tyty\resources\views/templates/components/field-manager.blade.php ENDPATH**/ ?>

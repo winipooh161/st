@@ -53,7 +53,7 @@
 
     <!-- Отладочные скрипты (только в режиме разработки) -->
     @if(env('APP_ENV') === 'local' || env('APP_DEBUG'))
-        @vite(['resources/js/navigation-scroll-tester.js'])
+
     @endif
 
     <!-- Дополнительные стили и скрипты -->

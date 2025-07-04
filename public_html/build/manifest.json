@@ -1,0 +1,75 @@
+{
+  "_MobileNavUtils-5a4f7da0.js": {
+    "file": "assets/MobileNavUtils-5a4f7da0.js"
+  },
+  "public/js/media-editor.js": {
+    "file": "assets/media-editor-657bb033.js",
+    "isEntry": true,
+    "src": "public/js/media-editor.js"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-913c235c.css",
+    "isEntry": true,
+    "src": "resources/css/app.css"
+  },
+  "resources/css/media-editor.css": {
+    "file": "assets/media-editor-879835ba.css",
+    "isEntry": true,
+    "src": "resources/css/media-editor.css"
+  },
+  "resources/css/mobile-nav-optimized.css": {
+    "file": "assets/mobile-nav-optimized-ca44da8e.css",
+    "isEntry": true,
+    "src": "resources/css/mobile-nav-optimized.css"
+  },
+  "resources/css/modal-styles.css": {
+    "file": "assets/modal-styles-0c7ffb7b.css",
+    "isEntry": true,
+    "src": "resources/css/modal-styles.css"
+  },
+  "resources/css/style.css": {
+    "file": "assets/style-05c407f7.css",
+    "isEntry": true,
+    "src": "resources/css/style.css"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-67e8bdd5.js",
+    "imports": [
+      "resources/js/mobile-nav-wheel-picker.js",
+      "_MobileNavUtils-5a4f7da0.js"
+    ],
+    "isEntry": true,
+    "src": "resources/js/app.js"
+  },
+  "resources/js/loading-spinner.js": {
+    "file": "assets/loading-spinner-7328c379.js",
+    "isEntry": true,
+    "src": "resources/js/loading-spinner.js"
+  },
+  "resources/js/mobile-nav-wheel-picker.js": {
+    "file": "assets/mobile-nav-wheel-picker-cb06bc62.js",
+    "imports": [
+      "_MobileNavUtils-5a4f7da0.js"
+    ],
+    "isEntry": true,
+    "src": "resources/js/mobile-nav-wheel-picker.js"
+  },
+  "resources/js/mobile-nav/index.js": {
+    "file": "assets/index-cb06bc62.js",
+    "imports": [
+      "_MobileNavUtils-5a4f7da0.js"
+    ],
+    "isEntry": true,
+    "src": "resources/js/mobile-nav/index.js"
+  },
+  "resources/js/register-sw.js": {
+    "file": "assets/register-sw-39ddadf2.js",
+    "isEntry": true,
+    "src": "resources/js/register-sw.js"
+  },
+  "resources/sass/app.scss": {
+    "file": "assets/app-2fd25941.css",
+    "isEntry": true,
+    "src": "resources/sass/app.scss"
+  }
+}
