@@ -1,0 +1,238 @@
+/* 
+ * Единые стили для редактора шаблонов
+ * Дата: 4 июля 2025 г.
+ */
+
+/* Стили для редактируемых элементов */
+[contenteditable="true"].direct-editable {
+    border: 1px dashed transparent;
+    padding: 2px 4px;
+    min-height: 1em;
+    transition: all 0.2s ease;
+    cursor: text;
+    position: relative;
+}
+
+[contenteditable="true"].direct-editable:hover {
+    border-color: #a0a0a0;
+    background-color: rgba(249, 249, 249, 0.5);
+}
+
+[contenteditable="true"].direct-editable:focus {
+    outline: none;
+    border-color: #007bff;
+    background-color: rgba(240, 248, 255, 0.5);
+    box-shadow: 0 0 2px 1px rgba(0, 123, 255, 0.25);
+}
+
+/* Стили для редактируемых дат */
+[contenteditable="true"].date-editable {
+    cursor: pointer;
+    display: inline-block;
+    min-width: 80px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 16px;
+    padding-right: 24px;
+}
+
+[contenteditable="true"].date-editable:hover {
+    background-color: rgba(249, 249, 249, 0.8);
+}
+
+/* Стили для выделения редактируемых элементов */
+.template-content [data-editable] {
+    position: relative;
+}
+
+.template-content [data-editable]:not(:focus)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+    pointer-events: none;
+}
+
+.template-content [data-editable]:hover::before {
+    border-color: rgba(0, 123, 255, 0.3);
+}
+
+/* Стили для overlay загрузки */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-overlay::after {
+    content: '';
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Стили для уведомлений */
+#notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.notification {
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification.success {
+    background-color: #4caf50;
+    color: white;
+}
+
+.notification.error {
+    background-color: #f44336;
+    color: white;
+}
+
+.notification.warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+.notification.info {
+    background-color: #2196f3;
+    color: white;
+}
+
+/* Стили для flatpickr */
+.flatpickr-calendar {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 5px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    width: 100%;
+    max-width: 350px;
+    background-color: #fff;
+}
+
+.template-date-container {
+    margin-top: 5px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    background-color: #fff;
+    position: relative;
+    z-index: 999;
+}
+
+.template-date-container .flatpickr-calendar {
+    box-shadow: none;
+    margin-top: 0;
+    border: none;
+}
+
+.template-date-field {
+    cursor: pointer;
+    border-bottom: 1px dashed #4CAF50;
+    display: inline-block;
+    padding: 2px 4px;
+    position: relative;
+    min-width: 90px;
+}
+
+.template-date-field:hover {
+    background-color: #f5f9ff;
+}
+
+.template-date-field::after {
+    content: '\1F4C5'; /* Календарь эмодзи */
+    font-size: 1.1em;
+    margin-left: 6px;
+    opacity: 0.6;
+}
+
+.template-date-field.template-editing {
+    border-bottom: 1px solid #007bff;
+    background-color: #e6f2ff;
+}
+
+.flatpickr-day.selected {
+    background: #007bff;
+    border-color: #007bff;
+}
+
+.flatpickr-day.selected:hover {
+    background: #0069d9;
+    border-color: #0069d9;
+}
+
+.flatpickr-day:hover {
+    background: #f0f8ff;
+}
+
+.flatpickr-current-month {
+    padding-top: 10px;
+}
+
+.date-range {
+    display: flex;
+  
+    gap: 15px;
+}
+
+/* Стили для панели инструментов шаблона */
+.template-toolbar {
+    background-color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.template-toolbar button {
+    margin-left: 8px;
+}
+
+/* Стили для контейнера шаблона */
+.template-preview-container {
+    position: relative;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    padding: 0px;
+}
+
+/* Стили для многострочных текстовых полей */
+[contenteditable="true"][data-field-type="textarea"] {
+    min-height: 60px;
+    padding: 8px;
+    white-space: pre-wrap;
+}

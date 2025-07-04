@@ -1,0 +1,199 @@
+/**
+ * Унифицированные стили для редактора шаблонов
+ * Объединяет все необходимые стили в один файл
+ * Дата: 4 июля 2025 г.
+ */
+
+/* Основные стили редактора */
+.template-container {
+    position: relative;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для редактируемых элементов */
+.template-editable {
+    cursor: pointer;
+    border-bottom: 1px dashed #ccc;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.template-edit-hover {
+    background-color: rgba(255, 255, 0, 0.1);
+}
+
+.template-editing {
+    outline: 2px solid #2196F3;
+    border-bottom: none;
+    background-color: rgba(33, 150, 243, 0.05);
+    padding: 2px;
+}
+
+.template-editable[contenteditable="true"]:focus {
+    outline: none;
+    border-bottom: none;
+}
+
+/* Стили для полей с датами */
+.template-date-field {
+    cursor: pointer;
+    border-bottom: 1px dashed #4CAF50;
+}
+
+/* Стили для календаря flatpickr */
+.flatpickr-calendar {
+    box-shadow: 0 3px 15px rgba(0,0,0,0.2) !important;
+    border-radius: 6px !important;
+}
+
+.flatpickr-day.selected, 
+.flatpickr-day.selected:hover {
+    background-color: #4CAF50 !important;
+    border-color: #4CAF50 !important;
+}
+
+.flatpickr-day.today {
+    border-color: #2196F3 !important;
+}
+
+.flatpickr-day:hover {
+    background-color: rgba(33, 150, 243, 0.1) !important;
+}
+
+/* Панель инструментов шаблона */
+.template-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Кнопки для панели инструментов */
+.template-btn {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.template-btn:hover {
+    border-color: #bbb;
+    background-color: #f9f9f9;
+}
+
+.template-btn i {
+    font-size: 16px;
+}
+
+.template-save-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.template-save-btn:hover {
+    background-color: #45a049;
+}
+
+/* Стили для уведомлений */
+#template-notifications {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.template-notification {
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.template-notification.success {
+    background-color: #4CAF50;
+}
+
+.template-notification.error {
+    background-color: #F44336;
+}
+
+.template-notification.info {
+    background-color: #2196F3;
+}
+
+/* Анимации для уведомлений */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+}
+
+.template-notification {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.template-notification.fadeOut {
+    animation: fadeOut 0.3s ease-in-out;
+}
+
+/* Предпросмотр шаблона */
+.template-preview {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+    background-color: #fff;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .template-toolbar {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .toolbar-left, .toolbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .template-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}

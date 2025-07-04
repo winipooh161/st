@@ -1,0 +1,746 @@
+/**
+ * Редактор шаблонов
+ * Включает в себя функциональность для редактирования текста и дат с помощью календаря
+ * Дата: 4 июля 2025 г.
+ */
+
+// Создаем объект TemplateEditor в любом случае
+// Если он уже существует, перезапишем его
+const TemplateEditor = (function() {
+    // Хранение состояния редактора
+    const state = {
+        activeElement: null,
+        datePickerInstances: {},
+        editableElements: {},
+        unsavedChanges: false,
+        calendar: null
+    };
+    
+    // Конфигурация 
+    const config = {
+    editableSelector: '[data-editable]',
+    dateFieldSelector: '[data-field-type="date"]',
+    editingClass: 'editing',
+    dateFormat: 'DD.MM.YYYY',
+    calendarContainerClass: 'template-date-container',
+        datePickerOptions: {
+            locale: 'ru',
+            dateFormat: 'd.m.Y',
+            altInput: true,
+            altFormat: 'd.m.Y',
+            disableMobile: true
+        }
+    };
+    
+    /**
+     * Форматирование даты из строки в нужный формат
+     * @param {string} dateString - строка с датой
+     * @param {string} format - формат даты (по умолчанию DD.MM.YYYY)
+     * @returns {string} - отформатированная дата
+     */
+    function formatDate(dateString, format = config.dateFormat) {
+        const date = new Date(dateString.split('.').reverse().join('-'));
+        
+        if (isNaN(date)) {
+            return dateString; // Возвращаем исходную строку, если не удалось распарсить дату
+        }
+        
+        // Форматирование даты в нужный формат
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        
+        switch (format.toUpperCase()) {
+            case 'DD.MM.YYYY':
+                return `${day}.${month}.${year}`;
+            case 'MM.DD.YYYY':
+                return `${month}.${day}.${year}`;
+            case 'YYYY-MM-DD':
+                return `${year}-${month}-${day}`;
+            default:
+                return `${day}.${month}.${year}`;
+        }
+    }
+
+    /**
+     * Преобразование даты из одного формата в другой
+     * @param {string} dateValue - значение даты
+     * @param {string} fromFormat - исходный формат (например, DD.MM.YYYY)
+     * @param {string} toFormat - целевой формат (например, YYYY-MM-DD)
+     * @returns {string} - преобразованная дата
+     */
+    function convertDateFormat(dateValue, fromFormat, toFormat) {
+        let day, month, year;
+        
+        if (fromFormat.toUpperCase() === 'DD.MM.YYYY') {
+            [day, month, year] = dateValue.split('.');
+        } else if (fromFormat.toUpperCase() === 'YYYY-MM-DD') {
+            [year, month, day] = dateValue.split('-');
+        } else {
+            return dateValue; // Неизвестный формат
+        }
+        
+        if (toFormat.toUpperCase() === 'DD.MM.YYYY') {
+            return `${day}.${month}.${year}`;
+        } else if (toFormat.toUpperCase() === 'YYYY-MM-DD') {
+            return `${year}-${month}-${day}`;
+        }
+        
+        return dateValue;
+    }
+    
+    /**
+     * Создание простого календаря для редактирования даты
+     */
+    function createSimpleDatePicker() {
+        const calendarContainer = document.createElement('div');
+        calendarContainer.className = config.calendarContainerClass;
+        calendarContainer.style.display = 'none';
+        document.body.appendChild(calendarContainer);
+        
+        return calendarContainer;
+    }
+    
+    /**
+     * Создание редактируемого элемента ввода для текстовых полей (обновлено для прямого редактирования)
+     * @param {HTMLElement} element - редактируемый элемент
+     */
+    function createEditableInput(element) {
+        // Сохраняем текущее значение
+        const currentValue = element.innerText.trim();
+        
+        // Делаем элемент напрямую редактируемым с помощью contentEditable
+        element.contentEditable = 'true';
+        element.dataset.originalValue = currentValue;
+        element.classList.add('editing');
+        
+        // Фокусируемся на элементе
+        element.focus();
+        
+        // Устанавливаем курсор в конец текста
+        const range = document.createRange();
+        const selection = window.getSelection();
+        range.selectNodeContents(element);
+        range.collapse(false); // false означает, что коллапс происходит к концу узла
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Обработчики событий для contentEditable
+        function handleBlur() {
+            finishEditing(element, element.textContent.trim());
+            element.removeEventListener('blur', handleBlur);
+            element.removeEventListener('keydown', handleKeyDown);
+        }
+        
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                element.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                element.textContent = element.dataset.originalValue;
+                element.blur();
+            }
+        }
+        
+        // Добавляем слушатели событий
+        element.addEventListener('blur', handleBlur);
+        element.addEventListener('keydown', handleKeyDown);
+    }
+
+    /**
+     * Завершение редактирования и сохранение значения
+     * @param {HTMLElement} element - редактируемый элемент
+     * @param {string} value - новое значение
+     */
+    function finishEditing(element, value) {
+        const fieldName = element.getAttribute('data-editable');
+        const fieldType = element.getAttribute('data-field-type') || 'text';
+        
+        // Делаем элемент неизменяемым
+        element.contentEditable = 'false';
+        
+        // Удаляем класс редактирования
+        element.classList.remove(config.editingClass);
+        element.classList.remove('editing');
+        
+        // Обновляем текст элемента если нужно
+        if (element.textContent.trim() !== value) {
+            element.textContent = value;
+        }
+        
+        // Обновляем состояние
+        state.activeElement = null;
+        state.unsavedChanges = true;
+        
+        // Сохраняем значение в состояние
+        state.editableElements[fieldName] = {
+            value: value,
+            type: fieldType
+        };
+        
+        // Оповещаем о изменениях
+        document.dispatchEvent(new CustomEvent('template-editor:change', {
+            detail: {
+                fieldName,
+                value,
+                fieldType
+            }
+        }));
+    }
+
+    /**
+     * Инициализация календаря для поля с датой
+     * @param {HTMLElement} element - элемент даты
+     */
+    function initDatePicker(element) {
+        const fieldName = element.getAttribute('data-editable');
+        const dateFormat = element.getAttribute('data-date-format') || 'dd.mm.yyyy';
+        
+        // Создаем уникальный ID для календаря, если его еще нет
+        if (!element.id) {
+            element.id = `date-field-${fieldName}-${Date.now()}`;
+        }
+        
+        // Проверяем, не инициализирован ли уже календарь для этого элемента
+        if (state.datePickerInstances[element.id]) {
+            return;
+        }
+        
+        // Опции для flatpickr
+        const options = {
+            ...config.datePickerOptions,
+            defaultDate: element.innerText.trim(),
+            onChange: function(_, dateStr) {
+                finishEditing(element, dateStr);
+                this.close();
+            }
+        };
+        
+        // Если используем flatpickr
+        if (window.flatpickr) {
+            state.datePickerInstances[element.id] = flatpickr(element, options);
+            return;
+        }
+        
+        // Если flatpickr недоступен, используем встроенный виджет
+        if (!state.calendar) {
+            state.calendar = createSimpleDatePicker();
+        }
+        updateSimpleCalendar(state.calendar, element);
+    }
+    }
+
+    /**
+     * Инициализация простого календаря
+     * @param {HTMLElement} container - контейнер календаря
+     * @param {HTMLElement} dateElement - элемент с датой
+     */
+    function initSimpleCalendar(container, dateElement) {
+        const currentValue = dateElement.innerText.trim();
+        let [day, month, year] = currentValue.split('.');
+        
+        day = parseInt(day, 10);
+        month = parseInt(month, 10) - 1; // В JavaScript месяцы от 0 до 11
+        year = parseInt(year, 10);
+        
+        const date = new Date(year, month, day);
+        
+        if (isNaN(date)) {
+            // Если дата невалидная, используем текущую
+            date = new Date();
+        }
+        
+        // Создаем HTML для простого календаря
+        container.innerHTML = createSimpleCalendarHTML(date);
+        container.style.display = 'block';
+        
+        // Позиционируем календарь
+        positionCalendar(container, dateElement);
+        
+        // Добавляем обработчики для выбора даты
+        addSimpleCalendarHandlers(container, dateElement);
+    }
+
+    /**
+     * Обновление простого календаря
+     * @param {HTMLElement} container - контейнер календаря
+     * @param {HTMLElement} dateElement - элемент с датой
+     */
+    function updateSimpleCalendar(container, dateElement) {
+        initSimpleCalendar(container, dateElement);
+    }
+
+    /**
+     * Создание HTML для простого календаря
+     * @param {Date} date - дата
+     * @returns {string} - HTML разметка календаря
+     */
+    function createSimpleCalendarHTML(date) {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay(); // 0 - воскресенье
+        
+        // Названия месяцев на русском
+        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+        
+        // Строим HTML для заголовка календаря
+        let html = `
+            <div class="simple-calendar-header">
+                <button type="button" class="prev-month">&lt;</button>
+                <div class="current-month">${monthNames[month]} ${year}</div>
+                <button type="button" class="next-month">&gt;</button>
+            </div>
+            <table class="simple-calendar-table">
+                <thead>
+                    <tr>
+                        <th>Пн</th>
+                        <th>Вт</th>
+                        <th>Ср</th>
+                        <th>Чт</th>
+                        <th>Пт</th>
+                        <th>Сб</th>
+                        <th>Вс</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        // Получаем день недели первого дня месяца (0 - воскресенье, 1 - понедельник и т.д.)
+        let dayOfWeek = firstDay === 0 ? 6 : firstDay - 1; // Преобразуем к европейскому формату (понедельник - первый день)
+        
+        // Добавляем пустые ячейки в начале
+        html += '<tr>';
+        for (let i = 0; i < dayOfWeek; i++) {
+            html += '<td></td>';
+        }
+        
+        // Добавляем дни месяца
+        let currentDay = 1;
+        while (currentDay <= daysInMonth) {
+            if (dayOfWeek === 7) {
+                dayOfWeek = 0;
+                html += '</tr><tr>';
+            }
+            
+            const isToday = currentDay === date.getDate();
+            const dayClass = isToday ? 'today' : '';
+            
+            html += `<td class="calendar-day ${dayClass}" data-day="${currentDay}">${currentDay}</td>`;
+            
+            dayOfWeek++;
+            currentDay++;
+        }
+        
+        // Добавляем пустые ячейки в конце
+        for (let i = dayOfWeek; i < 7; i++) {
+            html += '<td></td>';
+        }
+        
+        html += '</tr></tbody></table>';
+        
+        return html;
+    }
+
+    /**
+     * Позиционирование календаря рядом с элементом
+     * @param {HTMLElement} calendar - элемент календаря
+     * @param {HTMLElement} element - элемент, к которому привязан календарь
+     */
+    function positionCalendar(calendar, element) {
+        const rect = element.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        calendar.style.position = 'absolute';
+        calendar.style.zIndex = '1000';
+        
+        // Позиционируем под элементом
+        calendar.style.top = `${rect.bottom + scrollTop}px`;
+        calendar.style.left = `${rect.left + scrollLeft}px`;
+        
+        // Проверяем, не выходит ли календарь за пределы экрана
+        const calendarRect = calendar.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        
+        if (calendarRect.right > viewportWidth) {
+            calendar.style.left = `${rect.right + scrollLeft - calendarRect.width}px`;
+        }
+    }
+
+    /**
+     * Добавление обработчиков событий к простому календарю
+     * @param {HTMLElement} calendar - элемент календаря
+     * @param {HTMLElement} dateElement - элемент с датой
+     */
+    function addSimpleCalendarHandlers(calendar, dateElement) {
+        // Обработчик для выбора даты
+        calendar.addEventListener('click', function(e) {
+            const dayCell = e.target.closest('.calendar-day');
+            if (dayCell) {
+                const day = parseInt(dayCell.getAttribute('data-day'), 10);
+                const monthYear = calendar.querySelector('.current-month').textContent;
+                const [monthName, year] = monthYear.split(' ');
+                
+                const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+                const month = monthNames.indexOf(monthName) + 1;
+                
+                // Форматируем дату
+                const formattedDate = `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.${year}`;
+                
+                // Обновляем значение
+                finishEditing(dateElement, formattedDate);
+                
+                // Скрываем календарь
+                calendar.style.display = 'none';
+            }
+        });
+        
+        // Обработчик для кнопки предыдущего месяца
+        const prevButton = calendar.querySelector('.prev-month');
+        prevButton.addEventListener('click', function() {
+            const monthYear = calendar.querySelector('.current-month').textContent;
+            const [monthName, year] = monthYear.split(' ');
+            
+            const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            let month = monthNames.indexOf(monthName);
+            let newYear = parseInt(year, 10);
+            
+            if (month === 0) {
+                month = 11; // Декабрь
+                newYear -= 1;
+            } else {
+                month -= 1;
+            }
+            
+            const newDate = new Date(newYear, month, 1);
+            calendar.innerHTML = createSimpleCalendarHTML(newDate);
+            addSimpleCalendarHandlers(calendar, dateElement);
+        });
+        
+        // Обработчик для кнопки следующего месяца
+        const nextButton = calendar.querySelector('.next-month');
+        nextButton.addEventListener('click', function() {
+            const monthYear = calendar.querySelector('.current-month').textContent;
+            const [monthName, year] = monthYear.split(' ');
+            
+            const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+            let month = monthNames.indexOf(monthName);
+            let newYear = parseInt(year, 10);
+            
+            if (month === 11) {
+                month = 0; // Январь
+                newYear += 1;
+            } else {
+                month += 1;
+            }
+            
+            const newDate = new Date(newYear, month, 1);
+            calendar.innerHTML = createSimpleCalendarHTML(newDate);
+            addSimpleCalendarHandlers(calendar, dateElement);
+        });
+        
+        // Закрытие календаря при клике вне его
+        document.addEventListener('click', function handleOutsideClick(e) {
+            if (!calendar.contains(e.target) && e.target !== dateElement) {
+                calendar.style.display = 'none';
+                document.removeEventListener('click', handleOutsideClick);
+            }
+        });
+    }
+
+    /**
+     * Получение всех редактируемых элементов
+     * @returns {Object} объект с редактируемыми элементами
+     */
+    function getEditableElements() {
+        return state.editableElements;
+    }
+    
+    /**
+     * Инициализация редактора шаблонов
+     */
+    function init() {
+        console.log('Инициализация редактора шаблонов...');
+        
+        // Находим все редактируемые элементы
+        const editableElements = document.querySelectorAll(config.editableSelector);
+        
+        // Инициализируем элементы
+        editableElements.forEach(element => {
+            // Проверяем, не обрабатывается ли элемент другим редактором
+            if (element.hasAttribute('data-initialized-inline-editor') || 
+                element.hasAttribute('data-template-editor-disabled')) {
+                return; // Пропускаем элемент, если он уже инициализирован другим редактором
+            }
+        // Инициализируем элементы
+        editableElements.forEach(element => {
+            // Проверяем, не обрабатывается ли элемент другим редактором
+            if (element.hasAttribute('data-initialized-inline-editor') || 
+                element.hasAttribute('data-template-editor-disabled')) {
+                return; // Пропускаем элемент, если он уже инициализирован другим редактором
+            }
+            
+            const fieldId = element.getAttribute('data-editable');
+            const fieldType = element.getAttribute('data-field-type') || 'text';
+            const value = element.innerText.trim();
+            
+            // Сохраняем начальное значение
+            state.editableElements[fieldId] = {
+                value: value,
+                type: fieldType
+            };
+                if (state.activeElement === element) {
+                    return;
+                }
+                
+                // Если уже есть активный элемент, завершаем его редактирование
+                if (state.activeElement) {
+                    if (state.activeElement.contentEditable === 'true') {
+                        // Для contentEditable элементов
+                        state.activeElement.blur();
+                    } else {
+                        // Для старых элементов с input (на всякий случай)
+                        const input = state.activeElement.querySelector('.inline-edit-input');
+                        if (input) {
+                            input.blur();
+                        }
+                    }
+                }
+                
+                // Добавляем класс редактирования
+                element.classList.add(config.editingClass);
+                state.activeElement = element;
+                
+                // Разные типы редактирования в зависимости от типа поля
+                if (fieldType === 'date') {
+                    initDatePicker(element);
+                } else {
+                    createEditableInput(element);
+                }
+            });
+        });
+        
+        // Обработчик нажатия Escape для отмены редактирования
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && state.activeElement) {
+                if (state.activeElement.contentEditable === 'true') {
+                    // Для contentEditable элементов
+                    if (state.activeElement.dataset.originalValue) {
+                        state.activeElement.textContent = state.activeElement.dataset.originalValue;
+                    }
+                    state.activeElement.blur();
+                } else {
+                    // Для старых элементов с input (на всякий случай)
+                    const input = state.activeElement.querySelector('.inline-edit-input');
+                    if (input) {
+                        input.value = input.dataset.originalValue;
+                        input.blur();
+                    }
+                }
+            }
+        });
+        
+        // Сохранение данных
+        if (typeof window.saveTemplateData === 'undefined') {
+            window.saveTemplateData = function() {
+                console.log('Сохранение данных шаблона...');
+                console.log('Редактируемые элементы:', state.editableElements);
+                
+                // Вызываем событие сохранения
+                document.dispatchEvent(new CustomEvent('template-editor:save', {
+                    detail: {
+                        elements: state.editableElements
+                    }
+                }));
+                
+                // Сбрасываем флаг несохраненных изменений
+                state.unsavedChanges = false;
+                
+                return state.editableElements;
+            };
+        }
+        
+        console.log('Редактор шаблонов инициализирован успешно');
+    }
+    
+    /**
+     * Обработчик изменения поля из inline-editor
+     * @param {string} fieldId - идентификатор поля
+     * @param {string} newValue - новое значение поля
+     * @param {string} fieldType - тип поля (text, date и т.д.)
+     */
+    function handleFieldChanged(fieldId, newValue, fieldType) {
+        console.log(`🔄 Обработка изменения поля ${fieldId}: ${newValue} (${fieldType})`);
+        
+        if (!state.editableElements[fieldId]) {
+            state.editableElements[fieldId] = {
+                value: newValue,
+                type: fieldType
+            };
+        } else {
+            state.editableElements[fieldId].value = newValue;
+        }
+        
+        state.unsavedChanges = true;
+    }
+
+    /**
+     * Отключает обработчики событий для элемента
+     * @param {HTMLElement} element - элемент для отключения обработчиков
+     */
+    function disableElementHandlers(element) {
+        if (!element) return;
+        
+        // Помечаем элемент как отключенный для редактора шаблонов
+        element.setAttribute('data-template-editor-disabled', 'true');
+        
+        // Если это поле даты, отключаем его календарь
+        const fieldName = element.getAttribute('data-editable');
+        if (fieldName && state.datePickerInstances[fieldName]) {
+            try {
+                state.datePickerInstances[fieldName].destroy();
+                delete state.datePickerInstances[fieldName];
+                console.log(`🔔 Отключен календарь для поля ${fieldName} в старом редакторе`);
+            } catch (error) {
+                console.error(`Ошибка при отключении календаря для ${fieldName}:`, error);
+            }
+        }
+    }
+
+    // Публичный API
+    return {
+        init,
+        getEditableElements,
+        formatDate,
+        convertDateFormat,
+        onFieldChanged: handleFieldChanged,
+        disableElementHandlers,
+        hasUnsavedChanges: function() { return state.unsavedChanges; }
+    };
+})();
+
+// Экспорт в глобальную область видимости
+window.TemplateEditor = TemplateEditor;
+
+// CSS для календаря
+const calendarStyles = `
+.simple-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    background-color:rgb(0, 0, 0);
+    color: white;
+    border-radius: 4px;
+}
+
+.simple-calendar-header button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.simple-calendar-header button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.simple-calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.simple-calendar-table th {
+    padding: 8px;
+    text-align: center;
+    font-weight: normal;
+    color: #666;
+}
+
+.simple-calendar-table td {
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.simple-calendar-table td.calendar-day:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.simple-calendar-table td.today {
+    background-color: rgba(76, 175, 80, 0.2);
+    font-weight: bold;
+    color: #4CAF50;
+}
+
+.template-date-container {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    width: 280px;
+}
+`;
+
+// Добавление стилей в head
+function addCalendarStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = calendarStyles;
+    document.head.appendChild(styleElement);
+}
+
+// Экспорт в глобальную область видимости
+window.TemplateEditor = TemplateEditor;
+
+// Инициализация немедленно для доступности в других скриптах
+(function() {
+    try {
+        addCalendarStyles();
+        if (TemplateEditor && TemplateEditor.init) {
+            TemplateEditor.init();
+            console.log('✅ TemplateEditor инициализирован немедленно');
+        }
+    } catch (e) {
+        console.error('❌ Ошибка при инициализации TemplateEditor:', e);
+    }
+})();
+
+// Инициализация при загрузке документа
+document.addEventListener('DOMContentLoaded', function() {
+    addCalendarStyles();
+    if (TemplateEditor && TemplateEditor.init) {
+        TemplateEditor.init();
+        console.log('✅ TemplateEditor успешно инициализирован при загрузке страницы');
+    } else {
+// Инициализация при загрузке документа
+document.addEventListener('DOMContentLoaded', function() {
+    addCalendarStyles();
+    if (TemplateEditor && TemplateEditor.init) {
+        TemplateEditor.init();
+        console.log('✅ TemplateEditor успешно инициализирован при загрузке страницы');
+    } else {
+        console.error('❌ TemplateEditor не найден или не имеет метода init');
+    }
+    
+    // Предупреждение о несохраненных изменениях
+    window.addEventListener('beforeunload', function(e) {
+        if (TemplateEditor && TemplateEditor.hasUnsavedChanges && TemplateEditor.hasUnsavedChanges()) {
+            // Modern browsers require the user to interact with the dialog
+            const message = 'У вас есть несохраненные изменения. Вы уверены, что хотите покинуть страницу?';
+            // For older browsers
+            if (e) {
+                e.preventDefault();
+                // Note: returnValue is deprecated but still needed for older browsers
+                e.returnValue = message;
+            }
+            return message; // For modern browsers
+        }
+    });

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест сбора данных диапазона дат</title>
+    <meta name="csrf-token" content="test-token">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .template-content {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .date-range {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .date-item {
+            flex: 1;
+        }
+        .date-item strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        [data-editable] {
+            display: inline-block;
+            padding: 8px 12px;
+            background-color: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        [data-editable]:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+        [data-editable="start_date"], [data-editable="end_date"] {
+            background-color: #e7f3ff;
+            border-color: #007bff;
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .controls button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .debug-info {
+            background: #333;
+            color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .debug-info h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="collectAndDisplayData()">Собрать данные</button>
+        <button onclick="simulateSave()">Симулировать сохранение</button>
+        <button onclick="clearDebugInfo()">Очистить отладку</button>
+    </div>
+
+    <div class="template-content" id="template-content">
+        <h1>Тестовый шаблон с диапазоном дат</h1>
+        
+        <div class="date-range">
+            <div class="date-item">
+                <strong>Дата начала:</strong>
+                <span data-editable="start_date" data-field-name="Дата начала" data-field-type="date" data-date-format="dd.mm.yyyy">01.01.2025</span>
+            </div>
+            <div class="date-item">
+                <strong>Дата окончания:</strong>
+                <span data-editable="end_date" data-field-name="Дата окончания" data-field-type="date" data-date-format="dd.mm.yyyy">31.12.2025</span>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 data-editable="company_name" data-field-name="Название компании" data-field-type="text">ООО "Тестовая Компания"</h2>
+            <p data-editable="description" data-field-name="Описание" data-field-type="text">
+                Это тестовый шаблон для проверки сбора данных диапазона дат.
+            </p>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debug-info">
+        <h3>Отладочная информация</h3>
+        <div>Нажмите "Собрать данные" для тестирования...</div>
+    </div>
+
+    <script>
+        // Устанавливаем глобальные переменные для тестирования
+        window.baseTemplateId = 1;
+        window.storeUrl = '/test-store';
+        window.myTemplatesUrl = '/my-templates';
+        
+        // Функция для сбора и отображения данных
+        function collectAndDisplayData() {
+            if (typeof window.TemplateDataCollector === 'undefined') {
+                updateDebugInfo('❌ TemplateDataCollector не загружен');
+                return;
+            }
+            
+            try {
+                const data = window.TemplateDataCollector.collectData();
+                updateDebugInfo('✅ Данные успешно собраны:\n' + JSON.stringify(data, null, 2));
+                
+                // Проверяем конвертацию дат
+                if (data.dateRange) {
+                    updateDebugInfo('\n🗓️ Диапазон дат:\n' + 
+                        `- date_from: ${data.dateRange.date_from}\n` +
+                        `- date_to: ${data.dateRange.date_to}\n`);
+                }
+            } catch (error) {
+                updateDebugInfo('❌ Ошибка при сборе данных: ' + error.message);
+            }
+        }
+        
+        // Функция для симуляции сохранения
+        function simulateSave() {
+            if (typeof window.saveTemplateData === 'function') {
+                updateDebugInfo('🔄 Симулируем сохранение...');
+                
+                // Перехватываем fetch для логирования
+                const originalFetch = window.fetch;
+                window.fetch = function(url, options) {
+                    updateDebugInfo('\n📡 Запрос на сервер:\n' + 
+                        `URL: ${url}\n` +
+                        `Method: ${options.method}\n` +
+                        `Headers: ${JSON.stringify(options.headers, null, 2)}\n` +
+                        `Body: ${options.body}\n`);
+                    
+                    // Возвращаем заглушку успешного ответа
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({
+                            success: true,
+                            message: 'Тест успешен',
+                            redirect_url: '/my-templates'
+                        })
+                    });
+                };
+                
+                // Выполняем сохранение
+                window.saveTemplateData();
+                
+                // Восстанавливаем оригинальный fetch через секунду
+                setTimeout(() => {
+                    window.fetch = originalFetch;
+                }, 1000);
+            } else {
+                updateDebugInfo('❌ Функция saveTemplateData не найдена');
+            }
+        }
+        
+        // Функция для очистки отладочной информации
+        function clearDebugInfo() {
+            document.getElementById('debug-info').innerHTML = '<h3>Отладочная информация</h3><div>Очищено...</div>';
+        }
+        
+        // Функция для обновления отладочной информации
+        function updateDebugInfo(message) {
+            const debugDiv = document.getElementById('debug-info');
+            debugDiv.innerHTML = '<h3>Отладочная информация</h3><div>' + message + '</div>';
+        }
+        
+        // Делаем элементы кликабельными для изменения дат
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateElements = document.querySelectorAll('[data-field-type="date"]');
+            dateElements.forEach(element => {
+                element.addEventListener('click', function() {
+                    const currentDate = this.textContent;
+                    const newDate = prompt('Введите новую дату (в формате дд.мм.гггг):', currentDate);
+                    if (newDate) {
+                        this.textContent = newDate;
+                        updateDebugInfo('🗓️ Дата изменена на: ' + newDate);
+                    }
+                });
+            });
+        });
+    </script>
+    
+    <!-- Подключаем наш скрипт -->
+    <script src="/js/templates/template-data-collector.js"></script>
+</body>
+</html>

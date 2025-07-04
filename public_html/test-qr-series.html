@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест QR-кодов серии</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { 
+            border: 1px solid #ddd; 
+            margin: 20px 0; 
+            padding: 20px; 
+            border-radius: 8px; 
+        }
+        .test-case h3 { color: #333; margin-top: 0; }
+        .qr-code { margin: 10px 0; }
+        .qr-code img { max-width: 200px; }
+        .info { background: #f0f0f0; padding: 10px; border-radius: 4px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Тестирование QR-кодов для серии шаблонов</h1>
+    
+    <div class="test-case">
+        <h3>Сценарий 1: Оригинальный создатель серии</h3>
+        <div class="info">
+            <p><strong>Ситуация:</strong> Пользователь создал серию из 10 шаблонов</p>
+            <p><strong>Ожидаемое поведение:</strong> Показывается QR-код для клиентов (получение шаблона)</p>
+            <p><strong>После сканирования клиентом:</strong> series_current уменьшается на 1</p>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Сценарий 2: Клиент получил шаблон из серии</h3>
+        <div class="info">
+            <p><strong>Ситуация:</strong> Клиент отсканировал QR и получил шаблон "(Получено по QR)"</p>
+            <p><strong>Ожидаемое поведение:</strong> Показывается QR-код для деактивации</p>
+            <p><strong>После сканирования создателем:</strong> Шаблон помечается как "Использован"</p>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h3>Сценарий 3: Просмотр серии другими пользователями</h3>
+        <div class="info">
+            <p><strong>Ситуация:</strong> Другие пользователи смотрят на серию</p>
+            <p><strong>Ожидаемое поведение:</strong> Видят актуальный счетчик использований</p>
+            <p><strong>Пример:</strong> "Доступно: 9 из 10" (если 1 уже получен)</p>
+        </div>
+    </div>
+    
+    <h2>Проверочный список изменений:</h2>
+    <ul>
+        <li class="success">✅ Обновлен TemplateQrController для корректного счета серии</li>
+        <li class="success">✅ Добавлена логика показа QR-кода для полученных шаблонов</li>
+        <li class="success">✅ Обновлена деактивация для разных типов шаблонов</li>
+        <li class="success">✅ Добавлены публичные маршруты для QR-кодов</li>
+        <li class="success">✅ Создана миграция для таблицы QR-кодов</li>
+    </ul>
+    
+    <h2>Следующие шаги:</h2>
+    <ol>
+        <li>Запустить миграцию для создания таблицы template_qr_codes</li>
+        <li>Протестировать создание серии и получение шаблона по QR</li>
+        <li>Проверить корректность обновления счетчика серии</li>
+        <li>Убедиться в работе деактивации шаблонов</li>
+    </ol>
+    
+    <div class="test-case">
+        <h3>Пример URL для тестирования</h3>
+        <div class="info">
+            <p><strong>Получение шаблона:</strong> http://tyty/qr/claim/TOKEN</p>
+            <p><strong>Деактивация:</strong> http://tyty/qr/deactivate/TOKEN</p>
+            <p><strong>Статус QR:</strong> GET /template-qr/ID/status</p>
+            <p><strong>Генерация клиент QR:</strong> POST /template-qr/ID/generate-client</p>
+            <p><strong>Генерация создатель QR:</strong> POST /template-qr/ID/generate-creator</p>
+        </div>
+    </div>
+</body>
+</html>
